@@ -56,6 +56,8 @@ DO
    SET name = :name, interchange_uuid = :interchange_uuid, url = :url, keywords = :keywords;
 `
 
+// UpdateInterchangeConfig updates our interchange configs according to the passed in interchanges. Returns
+// any errors encountered during validation or writing to the db.
 func UpdateInterchangeConfig(ctx context.Context, db *sqlx.DB, interchanges []Interchange) (err error) {
 	err = validateInterchangeConfig(interchanges)
 	if err != nil {
@@ -134,6 +136,7 @@ func UpdateInterchangeConfig(ctx context.Context, db *sqlx.DB, interchanges []In
 	return err
 }
 
+// GetInterchangeConfig returns our complete interchange configuration
 func GetInterchangeConfig(ctx context.Context, db *sqlx.DB) ([]Interchange, error) {
 	interchanges := []Interchange{}
 	err := db.SelectContext(ctx, &interchanges, `SELECT * FROM interchanges ORDER BY uuid`)
@@ -143,7 +146,7 @@ func GetInterchangeConfig(ctx context.Context, db *sqlx.DB) ([]Interchange, erro
 
 	// load the channels for each interchange
 	for i := range interchanges {
-		channels, err := GetChannelsForInterchange(ctx, db, interchanges[i])
+		channels, err := getChannelsForInterchange(ctx, db, interchanges[i])
 		if err != nil {
 			return nil, err
 		}
@@ -153,6 +156,8 @@ func GetInterchangeConfig(ctx context.Context, db *sqlx.DB) ([]Interchange, erro
 	return interchanges, nil
 }
 
+// GetInterchange returns the interchange configuration for the passed in UUID. This will include the
+// channels for the interchange with the default channel being the first channel in the slice.
 func GetInterchange(ctx context.Context, db *sqlx.DB, uuid string) (*Interchange, error) {
 	interchange := Interchange{}
 	err := db.GetContext(ctx, &interchange, `SELECT * FROM interchanges WHERE uuid = $1`, uuid)
@@ -165,7 +170,7 @@ func GetInterchange(ctx context.Context, db *sqlx.DB, uuid string) (*Interchange
 		return nil, err
 	}
 
-	channels, err := GetChannelsForInterchange(ctx, db, interchange)
+	channels, err := getChannelsForInterchange(ctx, db, interchange)
 	if err != nil {
 		logrus.WithError(err).Error("error looking up channels for interchange")
 		return nil, err
@@ -175,7 +180,7 @@ func GetInterchange(ctx context.Context, db *sqlx.DB, uuid string) (*Interchange
 	return &interchange, nil
 }
 
-func GetChannelsForInterchange(ctx context.Context, db *sqlx.DB, interchange Interchange) ([]Channel, error) {
+func getChannelsForInterchange(ctx context.Context, db *sqlx.DB, interchange Interchange) ([]Channel, error) {
 	channels := []Channel{}
 	err := db.SelectContext(ctx, &channels, `SELECT * FROM channels WHERE interchange_uuid = $1 ORDER BY uuid`, interchange.UUID)
 
@@ -207,6 +212,7 @@ DO
    SET channel_uuid = $2
 `
 
+// SetChannelForURN associates the passed in URN with the passed in Channel
 func SetChannelForURN(ctx context.Context, db *sqlx.DB, interchange *Interchange, channel *Channel, urn string) error {
 	// double check our channel membership
 	if channel.InterchangeUUID != interchange.UUID {
@@ -227,6 +233,7 @@ FROM urn_mappings u, channels c
 WHERE u.interchange_uuid = $1 AND u.urn = $2 AND u.channel_uuid = c.uuid
 `
 
+// GetChannelForURN returns the channel that is associated with the passed in URN, if any
 func GetChannelForURN(ctx context.Context, db *sqlx.DB, interchange *Interchange, urn string) (*Channel, error) {
 	channel := Channel{}
 	err := db.GetContext(ctx, &channel, getURNMappingSQL, interchange.UUID, urn)

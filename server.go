@@ -20,6 +20,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Server is a clover server, which handles incoming handle requests and configuration updates
 type Server struct {
 	config    *Config
 	router    *chi.Mux
@@ -29,6 +30,7 @@ type Server struct {
 	fs        http.FileSystem
 }
 
+// NewServer creates a new clover server
 func NewServer(config *Config, fs http.FileSystem) *Server {
 	server := &Server{
 		config: config,
@@ -60,6 +62,7 @@ func NewServer(config *Config, fs http.FileSystem) *Server {
 	return server
 }
 
+// Start starts our clover server, returning any errors encountered
 func (s *Server) Start() error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
@@ -115,6 +118,7 @@ func (s *Server) Start() error {
 	return nil
 }
 
+// Stop stops our clover server, returning any errors encountered
 func (s *Server) Stop() error {
 	if err := s.server.Shutdown(context.Background()); err != nil {
 		log.WithError(err).Error("error shutting down server")
@@ -127,9 +131,9 @@ func (s *Server) Stop() error {
 	return nil
 }
 
-type ServerHandlerFunc func(*Server, http.ResponseWriter, *http.Request) error
+type serverHandlerFunc func(*Server, http.ResponseWriter, *http.Request) error
 
-func (s *Server) newHandlerFunc(handler ServerHandlerFunc) http.HandlerFunc {
+func (s *Server) newHandlerFunc(handler serverHandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := handler(s, w, r)
 		if err != nil {

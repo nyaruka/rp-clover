@@ -59,6 +59,10 @@ func viewConfig(s *Server, w http.ResponseWriter, r *http.Request) error {
 
 func updateConfig(s *Server, w http.ResponseWriter, r *http.Request) error {
 	interchanges, err := models.GetInterchangeConfig(r.Context(), s.db)
+	if err != nil {
+		return err
+	}
+
 	config, err := json.MarshalIndent(interchanges, "", "    ")
 	if err != nil {
 		return err
