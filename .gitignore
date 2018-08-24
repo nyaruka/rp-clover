@@ -14,3 +14,4 @@
 fabconfig.py
 fabfile.py
 *.pyc
+rp-clover

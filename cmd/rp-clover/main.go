@@ -18,6 +18,8 @@ import (
 	_ "github.com/nyaruka/rp-clover/statik"
 )
 
+var version = "Dev"
+
 func main() {
 	config := clover.NewConfig()
 	loader := ezconf.NewLoader(&config, "clover", "Clover takes care of routing RapidPro messages based on membership.", []string{"clover.toml"})
@@ -59,6 +61,11 @@ func main() {
 	}
 
 	var templateFS http.FileSystem
+
+	// if we have a custom version, use it
+	if version != "Dev" {
+		config.Version = version
+	}
 
 	if config.Version == "Dev" {
 		templateFS = http.Dir("static")
