@@ -1,6 +1,6 @@
 build:
   main: ./cmd/rp-clover/main.go
-  binary: courier
+  binary: rp-clover
   goos:
     - windows
     - darwin
