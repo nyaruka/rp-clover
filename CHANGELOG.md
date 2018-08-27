@@ -1,3 +1,7 @@
+v0.1.4
+----------
+ * fix tests
+
 v0.1.3
 ----------
  * cache interchanges for a minute
