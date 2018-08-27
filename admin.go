@@ -77,7 +77,7 @@ func updateConfig(s *Server, w http.ResponseWriter, r *http.Request) error {
 	logrus.WithField("config", string(config)).Info("received new config")
 
 	// try to create our config
-	interchanges = make([]models.Interchange, 0)
+	interchanges = make([]*models.Interchange, 0)
 	err = json.Unmarshal(config, &interchanges)
 	if err != nil {
 		return renderInterchanges(s, w, r, config, "", err)
