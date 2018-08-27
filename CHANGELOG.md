@@ -1,3 +1,7 @@
+v0.1.5
+----------
+ * change receive endpoint to be /i/uuid/receive
+
 v0.1.4
 ----------
  * fix tests
