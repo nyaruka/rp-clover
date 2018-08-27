@@ -49,7 +49,7 @@ func handleInterchange(s *Server, w http.ResponseWriter, r *http.Request) error 
 	message := r.Form.Get("message")
 
 	// see if our text is any of our keywords, if so, assign this URN to that channel
-	message = strings.TrimSpace(message)
+	message = strings.ToLower(strings.TrimSpace(message))
 	for _, channel := range interchange.Channels {
 		for _, keyword := range channel.Keywords {
 			if message == keyword {

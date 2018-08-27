@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
@@ -29,6 +31,9 @@ type Interchange struct {
 	Scheme             string    `db:"scheme"                json:"scheme"   validate:"required"`
 	DefaultChannelUUID string    `db:"default_channel_uuid"  json:"-"`
 	Channels           []Channel `                           json:"channels" validate:"required,dive"`
+
+	// when we were loaded, for cache invalidation
+	loadedOn time.Time
 }
 
 // URNMapping represents the mapping for a URN
@@ -58,7 +63,7 @@ DO
 
 // UpdateInterchangeConfig updates our interchange configs according to the passed in interchanges. Returns
 // any errors encountered during validation or writing to the db.
-func UpdateInterchangeConfig(ctx context.Context, db *sqlx.DB, interchanges []Interchange) (err error) {
+func UpdateInterchangeConfig(ctx context.Context, db *sqlx.DB, interchanges []*Interchange) (err error) {
 	err = validateInterchangeConfig(interchanges)
 	if err != nil {
 		return err
@@ -133,12 +138,19 @@ func UpdateInterchangeConfig(ctx context.Context, db *sqlx.DB, interchanges []In
 		}
 	}
 
+	// if we saved correctly clear out our cache
+	if err == nil {
+		cacheLock.Lock()
+		interchangeCache = make(map[string]*Interchange)
+		cacheLock.Unlock()
+	}
+
 	return err
 }
 
 // GetInterchangeConfig returns our complete interchange configuration
-func GetInterchangeConfig(ctx context.Context, db *sqlx.DB) ([]Interchange, error) {
-	interchanges := []Interchange{}
+func GetInterchangeConfig(ctx context.Context, db *sqlx.DB) ([]*Interchange, error) {
+	interchanges := make([]*Interchange, 0, 5)
 	err := db.SelectContext(ctx, &interchanges, `SELECT * FROM interchanges ORDER BY uuid`)
 	if err != nil {
 		return nil, err
@@ -159,8 +171,18 @@ func GetInterchangeConfig(ctx context.Context, db *sqlx.DB) ([]Interchange, erro
 // GetInterchange returns the interchange configuration for the passed in UUID. This will include the
 // channels for the interchange with the default channel being the first channel in the slice.
 func GetInterchange(ctx context.Context, db *sqlx.DB, uuid string) (*Interchange, error) {
-	interchange := Interchange{}
-	err := db.GetContext(ctx, &interchange, `SELECT * FROM interchanges WHERE uuid = $1`, uuid)
+	cacheLock.RLock()
+	interchange, found := interchangeCache[uuid]
+	cacheLock.RUnlock()
+
+	// found it and loaded less than a minute ago? return it straight away
+	if found && time.Now().Sub(interchange.loadedOn) < time.Minute {
+		return interchange, nil
+	}
+
+	// allocate an interchange to load into
+	interchange = &Interchange{}
+	err := db.GetContext(ctx, interchange, `SELECT * FROM interchanges WHERE uuid = $1`, uuid)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -177,10 +199,16 @@ func GetInterchange(ctx context.Context, db *sqlx.DB, uuid string) (*Interchange
 	}
 
 	interchange.Channels = channels
-	return &interchange, nil
+	interchange.loadedOn = time.Now()
+
+	cacheLock.Lock()
+	interchangeCache[uuid] = interchange
+	cacheLock.Unlock()
+
+	return interchange, nil
 }
 
-func getChannelsForInterchange(ctx context.Context, db *sqlx.DB, interchange Interchange) ([]Channel, error) {
+func getChannelsForInterchange(ctx context.Context, db *sqlx.DB, interchange *Interchange) ([]Channel, error) {
 	channels := []Channel{}
 	err := db.SelectContext(ctx, &channels, `SELECT * FROM channels WHERE interchange_uuid = $1 ORDER BY uuid`, interchange.UUID)
 
@@ -244,8 +272,11 @@ func GetChannelForURN(ctx context.Context, db *sqlx.DB, interchange *Interchange
 	return &channel, err
 }
 
-// utility methods for validation etc..
-var validate = validator.New()
+var (
+	validate         = validator.New()
+	interchangeCache = map[string]*Interchange{}
+	cacheLock        = sync.RWMutex{}
+)
 
 func mapKeys(m map[string]bool) []string {
 	keys := make([]string, 0, len(m))
@@ -255,7 +286,7 @@ func mapKeys(m map[string]bool) []string {
 	return keys
 }
 
-func validateInterchangeConfig(interchanges []Interchange) error {
+func validateInterchangeConfig(interchanges []*Interchange) error {
 	// validate our interchanges as a whole
 	seenInterchanges := make(map[string]bool)
 	seenChannels := make(map[string]bool)

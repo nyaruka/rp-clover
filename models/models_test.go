@@ -341,7 +341,7 @@ func TestConfigs(t *testing.T) {
 
 	ctx := context.Background()
 	for i, tc := range tcs {
-		interchanges := make([]Interchange, 0)
+		interchanges := make([]*Interchange, 0)
 		err := json.Unmarshal([]byte(tc.input), &interchanges)
 		if err != nil {
 			t.Errorf("test %d, received error unmarshalling input: %s", i, tc.input)
@@ -421,7 +421,7 @@ func TestMappings(t *testing.T) {
 		}
 	]`
 
-	interchanges := make([]Interchange, 0)
+	interchanges := make([]*Interchange, 0)
 	err := json.Unmarshal([]byte(config), &interchanges)
 	assert.NoErrorf(t, err, "received error unmarshalling config")
 
@@ -431,9 +431,9 @@ func TestMappings(t *testing.T) {
 	interchanges, err = GetInterchangeConfig(ctx, db)
 	assert.NoError(t, err)
 
-	i1 := &interchanges[0]
+	i1 := interchanges[0]
 	i1c1 := &interchanges[0].Channels[0]
-	i2 := &interchanges[1]
+	i2 := interchanges[1]
 	i2c1 := &interchanges[1].Channels[0]
 
 	tcs := []struct {
