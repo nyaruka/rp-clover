@@ -57,7 +57,7 @@ func NewServer(config *Config, fs http.FileSystem) *Server {
 	router.Mount("/admin", newAdminRouter(server))
 
 	// and our handler view
-	router.Mount("/handle/{interchangeUUID:[0-9a-fA-F-]{36}}", server.newHandlerFunc(handleInterchange))
+	router.Mount("/i/{interchangeUUID:[0-9a-fA-F-]{36}}/receive", server.newHandlerFunc(handleInterchange))
 
 	return server
 }
