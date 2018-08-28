@@ -272,6 +272,22 @@ func GetChannelForURN(ctx context.Context, db *sqlx.DB, interchange *Interchange
 	return &channel, err
 }
 
+const deleteURNMappingSQL = `
+DELETE 
+FROM urn_mappings
+WHERE interchange_uuid = $1 AND urn = $2
+`
+
+// ClearChannelForURN clears any association with a channel a URN has
+func ClearChannelForURN(ctx context.Context, db *sqlx.DB, interchange *Interchange, urn string) error {
+	_, err := db.ExecContext(ctx, deleteURNMappingSQL, interchange.UUID, urn)
+	if err != nil {
+		logrus.WithError(err).Error("error deleting urn mapping")
+	}
+
+	return err
+}
+
 var (
 	validate         = validator.New()
 	interchangeCache = map[string]*Interchange{}

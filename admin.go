@@ -2,6 +2,7 @@ package clover
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io/ioutil"
 	"net/http"
@@ -17,6 +18,8 @@ func newAdminRouter(s *Server) *chi.Mux {
 	router.Use(s.adminOnly)
 	router.Method(http.MethodGet, "/", s.newHandlerFunc(viewConfig))
 	router.Method(http.MethodPost, "/", s.newHandlerFunc(updateConfig))
+	router.Mount("/{interchangeUUID:[0-9a-fA-F-]{36}}/map", s.newHandlerFunc(handleMap))
+
 	return router
 }
 
@@ -114,4 +117,59 @@ func loadTemplate(fs http.FileSystem, name string) (*template.Template, error) {
 	}
 
 	return template.New(name).Parse(string(text))
+}
+
+// handles a mapping request
+func handleMap(s *Server, w http.ResponseWriter, r *http.Request) error {
+	interchangeUUID := chi.URLParam(r, "interchangeUUID")
+
+	// look up our interchange
+	interchange, err := models.GetInterchange(r.Context(), s.db, interchangeUUID)
+	if err != nil {
+		return err
+	}
+
+	if interchange == nil {
+		return writeErrorResponse(r.Context(), w, http.StatusNotFound, "interchange not found", fmt.Errorf("interchange not found"))
+	}
+
+	r.ParseForm()
+	urn := r.Form.Get("urn")
+	if urn == "" {
+		return writeErrorResponse(r.Context(), w, http.StatusBadRequest, "missing urn", fmt.Errorf("missing urn field"))
+	}
+
+	// if this creating a new association
+	if r.Method == http.MethodPost {
+		var channel *models.Channel
+		channelUUID := r.Form.Get("channel")
+
+		// check that that UUID is in our interchange
+		for _, c := range interchange.Channels {
+			if c.UUID == channelUUID {
+				channel = &c
+				break
+			}
+		}
+
+		if channel == nil {
+			return writeErrorResponse(r.Context(), w, http.StatusBadRequest, "channel not found", fmt.Errorf("channel with UUID: %s not found", channelUUID))
+		}
+
+		// associate our URN
+		err := models.SetChannelForURN(r.Context(), s.db, interchange, channel, urn)
+		if err != nil {
+			return err
+		}
+
+		return writeDataResponse(r.Context(), w, http.StatusOK, "mapping created", nil)
+	} else if r.Method == http.MethodDelete {
+		err := models.ClearChannelForURN(r.Context(), s.db, interchange, urn)
+		if err != nil {
+			return err
+		}
+		return writeDataResponse(r.Context(), w, http.StatusOK, "mapping removed", nil)
+	}
+
+	return writeErrorResponse(r.Context(), w, http.StatusMethodNotAllowed, "invalid method", fmt.Errorf("must be POST or DELETE"))
 }

@@ -391,7 +391,7 @@ func TestMappings(t *testing.T) {
 			"uuid": "5fb66333-7f8c-47aa-9aa5-bfee37b79b22",
 			"name": "Nigeria",
 			"country": "NE",
-			"scheme": "twitter",
+			"scheme": "tel",
 			"channels": [
 				{
 					"uuid": "557d3353-6b89-441a-aee5-8c398fd7a61f",
@@ -400,6 +400,14 @@ func TestMappings(t *testing.T) {
 					"keywords": [
 						"one"
 					]
+				},
+				{
+					"uuid": "557d3353-6b89-441a-aee5-8c398fd7a62f",
+					"name": "U-Report Nigeria NE",
+					"url": "https://foobar",
+					"keywords": [
+						"two"
+					]
 				}
 			]
 		},
@@ -407,7 +415,7 @@ func TestMappings(t *testing.T) {
 			"uuid": "afc2532c-1565-4016-a83e-fc6bc1ac3550",
 			"name": "Nigeria NE",
 			"country": "NE",
-			"scheme": "twitter",
+			"scheme": "tel",
 			"channels": [
 				{
 					"uuid": "7331140b-2be0-4855-92e1-fd06ca456364",
@@ -433,6 +441,7 @@ func TestMappings(t *testing.T) {
 
 	i1 := interchanges[0]
 	i1c1 := &interchanges[0].Channels[0]
+	i1c2 := &interchanges[0].Channels[1]
 	i2 := interchanges[1]
 	i2c1 := &interchanges[1].Channels[0]
 
@@ -446,13 +455,20 @@ func TestMappings(t *testing.T) {
 	}{
 		{i1, i1c1, "tel:2065551212", i1, "tel:2065551212", i1c1},
 		{i1, i1c1, "tel:2065551212", i1, "tel:2065551213", nil},
+		{i1, i1c2, "tel:2065551212", i1, "tel:2065551212", i1c2},
+		{i1, nil, "tel:2065551212", i1, "tel:2065551212", nil},
 		{i2, i2c1, "tel:2065551213", i2, "tel:2065551213", i2c1},
 		{i2, i2c1, "tel:2065551213", i1, "tel:2065551213", nil},
 	}
 
 	for i, tc := range tcs {
-		err := SetChannelForURN(ctx, db, tc.interchange, tc.channel, tc.urn)
-		assert.NoErrorf(t, err, "test %d: error setting channel", i)
+		if tc.channel != nil {
+			err := SetChannelForURN(ctx, db, tc.interchange, tc.channel, tc.urn)
+			assert.NoErrorf(t, err, "test %d: error setting channel", i)
+		} else {
+			err := ClearChannelForURN(ctx, db, tc.interchange, tc.urn)
+			assert.NoErrorf(t, err, "test %d: error clearing channel", i)
+		}
 
 		channel, err := GetChannelForURN(ctx, db, tc.testInterchange, tc.testURN)
 		assert.NoErrorf(t, err, "test %d: error getting channel", i)
