@@ -1,3 +1,7 @@
+v0.1.6
+----------
+ * add admin interface for adding mappings
+
 v0.1.5
 ----------
  * change receive endpoint to be /i/uuid/receive
