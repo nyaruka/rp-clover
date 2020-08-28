@@ -1,3 +1,7 @@
+v0.1.8
+----------
+ * fix goreleaser
+
 v0.1.7
 ----------
  * Support matching urn with or without plus
