@@ -1,3 +1,7 @@
+v0.1.7
+----------
+ * Support matching urn with or without plus
+
 v0.1.6
 ----------
  * add admin interface for adding mappings
