@@ -13,7 +13,7 @@ import (
 )
 
 func setUp(t *testing.T) *sqlx.DB {
-	db, err := sqlx.Open("postgres", "postgres://localhost/clover_test?sslmode=disable")
+	db, err := sqlx.Open("postgres", "postgres://clover:clover@localhost/clover_test?sslmode=disable")
 	if err != nil {
 		t.Fatalf("error connecting to db: %s", err)
 	}
