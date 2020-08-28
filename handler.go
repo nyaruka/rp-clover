@@ -39,7 +39,7 @@ func handleInterchange(s *Server, w http.ResponseWriter, r *http.Request) error 
 	if sender == "" {
 		return writeErrorResponse(r.Context(), w, http.StatusBadRequest, "missing sender field", fmt.Errorf("missing sender field"))
 	}
-	urn := interchange.Scheme + ":" + sender
+	urn := interchange.Scheme + ":+" + strings.TrimLeft(sender, "+")
 
 	// the channel we will route to
 	var routedChannel *models.Channel

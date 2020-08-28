@@ -17,7 +17,7 @@ jobs:
         postgresql version: '9.6'
         postgresql db: clover_test
         postgresql user: clover
-        postgresql password: clover
+        postgresql password: sesame123
 
     - name: Install Go
       uses: actions/setup-go@v1
