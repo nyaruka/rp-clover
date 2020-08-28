@@ -8,7 +8,7 @@ build:
   goarch:
     - amd64
 
-archive:
+archives:
   files:
     - LICENSE
     - README.md
