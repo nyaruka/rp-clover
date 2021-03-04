@@ -1,4 +1,8 @@
-# rp-clover [![Build Status](https://travis-ci.org/nyaruka/rp-clover.svg?branch=master)](https://travis-ci.org/nyaruka/rp-clover) [![codecov](https://codecov.io/gh/nyaruka/rp-clover/branch/master/graph/badge.svg)](https://codecov.io/gh/nyaruka/rp-clover) [![Go Report Card](https://goreportcard.com/badge/github.com/nyaruka/rp-clover)](https://goreportcard.com/report/github.com/nyaruka/rp-clover)
+# rp-clover 
+
+[![Build Status](https://travis-ci.org/nyaruka/rp-clover.svg?branch=main)](https://travis-ci.org/nyaruka/rp-clover) 
+[![codecov](https://codecov.io/gh/nyaruka/rp-clover/branch/main/graph/badge.svg)](https://codecov.io/gh/nyaruka/rp-clover) 
+[![Go Report Card](https://goreportcard.com/badge/github.com/nyaruka/rp-clover)](https://goreportcard.com/report/github.com/nyaruka/rp-clover)
 
 Router for incoming messages to RapidPro, takes care of changing contact affinity based on keywords and routing incoming messages based on that affinity.
 
