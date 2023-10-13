@@ -2,7 +2,7 @@ package clover
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -110,7 +110,7 @@ func TestHandler(t *testing.T) {
 
 		if err == nil {
 			assert.Equal(t, tc.assertStatus, resp.StatusCode, "test %d: mismatched status", i)
-			rBody, err := ioutil.ReadAll(resp.Body)
+			rBody, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err, "test %d: error reading body", i)
 
 			if !strings.Contains(string(rBody), tc.assertText) {

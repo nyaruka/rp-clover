@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/subtle"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -17,7 +18,6 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/rp-clover/migrations"
-	log "github.com/sirupsen/logrus"
 )
 
 // Server is a clover server, which handles incoming handle requests and configuration updates
@@ -76,7 +76,7 @@ func (s *Server) Start() error {
 
 	err = s.db.PingContext(ctx)
 	if err != nil {
-		log.WithError(err).Error("unable to ping database")
+		slog.Error("unable to ping database", "error", err)
 		return err
 	}
 
@@ -105,15 +105,15 @@ func (s *Server) Start() error {
 		defer s.waitGroup.Done()
 		err := s.server.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
-			log.WithError(err).Error("http server error")
+			slog.Error("http server error", "error", err)
 		}
 	}()
 
-	log.WithFields(log.Fields{
-		"address": s.config.Address,
-		"port":    s.config.Port,
-		"version": s.config.Version,
-	}).Info("clover started")
+	slog.Info("clover started",
+		"address", s.config.Address,
+		"port", s.config.Port,
+		"version", s.config.Version,
+	)
 
 	return nil
 }
@@ -121,13 +121,13 @@ func (s *Server) Start() error {
 // Stop stops our clover server, returning any errors encountered
 func (s *Server) Stop() error {
 	if err := s.server.Shutdown(context.Background()); err != nil {
-		log.WithError(err).Error("error shutting down server")
+		slog.Error("error shutting down server", "error", err)
 	}
 
 	// wait for everything to stop
 	s.waitGroup.Wait()
 
-	log.Info("clover stopped")
+	slog.Info("clover stopped")
 	return nil
 }
 
@@ -137,10 +137,10 @@ func (s *Server) newHandlerFunc(handler serverHandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := handler(s, w, r)
 		if err != nil {
-			log.WithError(err).Error()
+			slog.Error("error handling request", "error", err)
 			err = writeErrorResponse(r.Context(), w, http.StatusInternalServerError, "server error", err)
 			if err != nil {
-				log.WithError(err).Error("error while writing")
+				slog.Error("error while writing", "error", err)
 			}
 		}
 	}
@@ -156,18 +156,18 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handle404(w http.ResponseWriter, r *http.Request) {
-	log.WithField("url", r.URL.String()).WithField("method", r.Method).WithField("resp_status", "404").Info("not found")
+	slog.Info("not found", "url", r.URL.String(), "method", r.Method, "resp_status", "404")
 	err := writeErrorResponse(r.Context(), w, http.StatusNotFound, "not found", fmt.Errorf("not found: %s", r.URL.String()))
 	if err != nil {
-		log.WithError(err).Error()
+		slog.Error("error writing error response", "error", err)
 	}
 }
 
 func (s *Server) handle405(w http.ResponseWriter, r *http.Request) {
-	log.WithField("url", r.URL.String()).WithField("method", r.Method).WithField("resp_status", "405").Info("invalid method")
+	slog.Info("invalid method", "url", r.URL.String(), "method", r.Method, "resp_status", "405")
 	err := writeErrorResponse(r.Context(), w, http.StatusNotFound, "method not allowed", fmt.Errorf("method not allowed: %s", r.Method))
 	if err != nil {
-		log.WithError(err).Error()
+		slog.Error("error writing error response", "error", err)
 	}
 }
 
