@@ -1,3 +1,8 @@
+v0.2.0 (2023-10-16)
+-------------------------
+ * Update deps
+ * Replace logrus use by slog
+
 v0.1.8
 ----------
  * fix goreleaser
