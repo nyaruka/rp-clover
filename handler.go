@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -140,7 +140,7 @@ func forwardRequest(ctx context.Context, w http.ResponseWriter, r *http.Request,
 
 	// we respond in the same way our downstream server did
 	w.WriteHeader(resp.StatusCode)
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
