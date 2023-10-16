@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -48,7 +48,7 @@ func makeTestRequest(path string, method string, values url.Values, authenticate
 	resp, err := http.DefaultClient.Do(req)
 
 	if err == nil {
-		rBody, err := ioutil.ReadAll(resp.Body)
+		rBody, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return err
 		}

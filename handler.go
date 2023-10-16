@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/nyaruka/rp-clover/models"
-	"github.com/sirupsen/logrus"
 )
 
 // handles an interchange request
@@ -87,14 +87,14 @@ func handleInterchange(s *Server, w http.ResponseWriter, r *http.Request) error 
 		routingReason = "default channel"
 	}
 
-	logrus.WithFields(logrus.Fields{
-		"interchange_uuid": interchange.UUID,
-		"channel_uuid":     routedChannel.UUID,
-		"base_url":         routedChannel.URL,
-		"urn":              urn,
-		"message":          message,
-		"routing_reason":   routingReason,
-	}).Info("forwarding request")
+	slog.Info("forwarding request",
+		"interchange_uuid", interchange.UUID,
+		"channel_uuid", routedChannel.UUID,
+		"base_url", routedChannel.URL,
+		"urn", urn,
+		"message", message,
+		"routing_reason", routingReason,
+	)
 
 	return forwardRequest(r.Context(), w, r, interchange, routedChannel)
 }
@@ -119,24 +119,24 @@ func forwardRequest(ctx context.Context, w http.ResponseWriter, r *http.Request,
 	// set any headers
 	outRequest.Header = r.Header
 
-	log := logrus.WithFields(logrus.Fields{
-		"channel_uuid": channel.UUID,
-		"url":          outURL,
-		"method":       outRequest.Method,
-	})
+	log := slog.With(
+		"channel_uuid", channel.UUID,
+		"url", outURL,
+		"method", outRequest.Method,
+	)
 
 	if r.Method == http.MethodPost {
-		log = log.WithField("form", r.PostForm)
+		log = log.With("form", r.PostForm)
 	}
 
 	// fire it off
 	resp, err := client.Do(outRequest)
 	if err != nil {
-		log.WithError(err).Error("error fowarding request")
+		log.Error("error fowarding request", "error", err)
 		return err
 	}
 
-	log.WithField("status_code", resp.StatusCode).Info("request forwarded")
+	log.Info("request forwarded", "status_code", resp.StatusCode)
 
 	// we respond in the same way our downstream server did
 	w.WriteHeader(resp.StatusCode)

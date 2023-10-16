@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"io/ioutil"
+	"io"
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi"
 	"github.com/nyaruka/rp-clover/models"
-	"github.com/sirupsen/logrus"
 )
 
 func newAdminRouter(s *Server) *chi.Mux {
@@ -49,7 +49,7 @@ func renderInterchanges(s *Server, w http.ResponseWriter, r *http.Request, confi
 func viewConfig(s *Server, w http.ResponseWriter, r *http.Request) error {
 	interchanges, err := models.GetInterchangeConfig(r.Context(), s.db)
 	if err != nil {
-		logrus.WithError(err).Error("error loading interchange config")
+		slog.Error("error loading interchange config", "error", err)
 		return err
 	}
 
@@ -77,7 +77,7 @@ func updateConfig(s *Server, w http.ResponseWriter, r *http.Request) error {
 	}
 
 	config = []byte(r.Form.Get("config"))
-	logrus.WithField("config", string(config)).Info("received new config")
+	slog.Info("received new config", "config", string(config))
 
 	// try to create our config
 	interchanges = make([]*models.Interchange, 0)
@@ -94,7 +94,7 @@ func updateConfig(s *Server, w http.ResponseWriter, r *http.Request) error {
 	// reselect our current interchanges
 	interchanges, err = models.GetInterchangeConfig(r.Context(), s.db)
 	if err != nil {
-		logrus.WithError(err).Error("error loading interchange config")
+		slog.Error("error loading interchange config", "error", err)
 		return err
 	}
 
@@ -111,7 +111,7 @@ func loadTemplate(fs http.FileSystem, name string) (*template.Template, error) {
 	if err != nil {
 		return nil, err
 	}
-	text, err := ioutil.ReadAll(file)
+	text, err := io.ReadAll(file)
 	if err != nil {
 		return nil, err
 	}

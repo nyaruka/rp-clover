@@ -4,13 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
-	"github.com/sirupsen/logrus"
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
@@ -100,7 +100,7 @@ func UpdateInterchangeConfig(ctx context.Context, db *sqlx.DB, interchanges []*I
 		// write this interchange
 		_, err := tx.NamedExecContext(ctx, upsertInterchangeSQL, interchange)
 		if err != nil {
-			logrus.WithError(err).Error("error upserting interchange")
+			slog.Error("error upserting interchange", "error", err)
 			return err
 		}
 
@@ -110,7 +110,7 @@ func UpdateInterchangeConfig(ctx context.Context, db *sqlx.DB, interchanges []*I
 			seenChannels[channel.UUID] = true
 			_, err = tx.NamedExecContext(ctx, upsertChannelSQL, channel)
 			if err != nil {
-				logrus.WithError(err).Error("error upserting interchange")
+				slog.Error("error upserting interchange", "error", err)
 				return err
 			}
 		}
@@ -188,13 +188,13 @@ func GetInterchange(ctx context.Context, db *sqlx.DB, uuid string) (*Interchange
 	}
 
 	if err != nil {
-		logrus.WithError(err).Error("error looking up interchange")
+		slog.Error("error looking up interchange", "error", err)
 		return nil, err
 	}
 
 	channels, err := getChannelsForInterchange(ctx, db, interchange)
 	if err != nil {
-		logrus.WithError(err).Error("error looking up channels for interchange")
+		slog.Error("error looking up channels for interchange", "error", err)
 		return nil, err
 	}
 
@@ -249,7 +249,7 @@ func SetChannelForURN(ctx context.Context, db *sqlx.DB, interchange *Interchange
 
 	_, err := db.ExecContext(ctx, upsertURNMappingSQL, interchange.UUID, channel.UUID, urn)
 	if err != nil {
-		logrus.WithError(err).Error("error upserting urn mapping")
+		slog.Error("error upserting urn mapping", "error", err)
 	}
 
 	return err
@@ -282,7 +282,7 @@ WHERE interchange_uuid = $1 AND urn = $2
 func ClearChannelForURN(ctx context.Context, db *sqlx.DB, interchange *Interchange, urn string) error {
 	_, err := db.ExecContext(ctx, deleteURNMappingSQL, interchange.UUID, urn)
 	if err != nil {
-		logrus.WithError(err).Error("error deleting urn mapping")
+		slog.Error("error deleting urn mapping", "error", err)
 	}
 
 	return err

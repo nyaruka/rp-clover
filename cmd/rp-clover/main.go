@@ -2,18 +2,22 @@
 package main
 
 import (
+	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
-	"github.com/evalphobia/logrus_sentry"
+	"github.com/getsentry/sentry-go"
 	_ "github.com/lib/pq"
 	"github.com/nyaruka/ezconf"
 	clover "github.com/nyaruka/rp-clover"
 	"github.com/rakyll/statik/fs"
-	log "github.com/sirupsen/logrus"
+	slogmulti "github.com/samber/slog-multi"
+	slogsentry "github.com/samber/slog-sentry"
 
 	_ "github.com/nyaruka/rp-clover/statik"
 )
@@ -25,32 +29,46 @@ func main() {
 	loader := ezconf.NewLoader(&config, "clover", "Clover takes care of routing RapidPro messages based on membership.", []string{"clover.toml"})
 	loader.MustLoad()
 
-	// configure our logger
-	log.SetOutput(os.Stdout)
-	log.SetFormatter(&log.TextFormatter{})
-
-	level, err := log.ParseLevel(config.LogLevel)
+	var level slog.Level
+	err := level.UnmarshalText([]byte(config.LogLevel))
 	if err != nil {
-		log.Fatalf("Invalid log level '%s'", level)
+		log.Fatalf("invalid log level %s", level)
+		os.Exit(1)
 	}
-	log.SetLevel(level)
+
+	// configure our logger
+	logHandler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level})
+	slog.SetDefault(slog.New(logHandler))
+
+	logger := slog.With("comp", "main")
+	logger.Info("starting clover", "version", version)
 
 	// if we have a DSN entry, try to initialize it
 	if config.SentryDSN != "" {
-		hook, err := logrus_sentry.NewSentryHook(config.SentryDSN, []log.Level{log.PanicLevel, log.FatalLevel, log.ErrorLevel})
-		hook.Timeout = 0
-		hook.StacktraceConfiguration.Enable = true
-		hook.StacktraceConfiguration.Skip = 4
-		hook.StacktraceConfiguration.Context = 5
+		err := sentry.Init(sentry.ClientOptions{
+			Dsn:           config.SentryDSN,
+			EnableTracing: false,
+		})
 		if err != nil {
-			log.WithError(err).Fatalf("invalid sentry DSN: '%s'", config.SentryDSN)
+			log.Fatalf("error initiating sentry client, error %s, dsn %s", err, config.SentryDSN)
+			os.Exit(1)
 		}
-		log.StandardLogger().Hooks.Add(hook)
+
+		defer sentry.Flush(2 * time.Second)
+
+		logger = slog.New(
+			slogmulti.Fanout(
+				logHandler,
+				slogsentry.Option{Level: slog.LevelError}.NewSentryHandler(),
+			),
+		)
+		logger = logger.With("release", version)
+		slog.SetDefault(logger)
 	}
 
 	// our settings shouldn't contain a timezone, nothing will work right with this not being a constant UTC
 	if strings.Contains(config.DB, "TimeZone") {
-		log.WithField("db", config.DB).Fatalf("invalid db connection string, do not specify a timezone, archiver always uses UTC")
+		logger.Error("invalid db connection string, do not specify a timezone, archiver always uses UTC", "db", config.DB)
 	}
 
 	// force our DB connection to be in UTC
@@ -72,23 +90,23 @@ func main() {
 	} else {
 		templateFS, err = fs.New()
 		if err != nil {
-			log.WithError(err).Fatal("error initializing statik filesystem")
+			logger.Error("error initializing statik filesystem", "error", err)
 		}
 	}
 
 	clover := clover.NewServer(config, templateFS)
-	log.Info("starting clover")
+	logger.Info("starting clover")
 	err = clover.Start()
 	if err != nil {
-		log.WithError(err).Fatal("error starting clover")
+		logger.Error("error starting clover", "error", err)
 	}
 
 	ch := make(chan os.Signal)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
-	log.WithField("signal", <-ch).Info("stopping clover")
+	logger.Info("stopping clover", "signal", <-ch)
 
 	err = clover.Stop()
 	if err != nil {
-		log.WithError(err).Fatal("error stopping clover")
+		logger.Error("error stopping clover", "error", err)
 	}
 }

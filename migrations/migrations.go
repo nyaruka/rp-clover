@@ -2,11 +2,12 @@ package migrations
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	log "github.com/sirupsen/logrus"
 )
 
 type migration struct {
@@ -107,22 +108,22 @@ func getVersion(ctx context.Context, db *sqlx.DB) (int, error) {
 }
 
 func apply(ctx context.Context, db *sqlx.DB, mig migration) error {
-	log := log.WithFields(log.Fields{
-		"version":     mig.version,
-		"description": mig.description,
-	})
+	log := slog.With(
+		"version", mig.version,
+		"description", mig.description,
+	)
 
 	log.Info("applying migration")
 
 	_, err := db.ExecContext(ctx, mig.sql)
 	if err != nil {
-		log.WithError(err).Error("error applying migration")
+		log.Error("error applying migration", "error", err)
 		return err
 	}
 
 	_, err = db.ExecContext(ctx, insertMigration, mig.version)
 	if err != nil {
-		log.WithError(err).Error("error inserting migration record")
+		log.Error("error inserting migration record", "error", err)
 		return err
 	}
 
@@ -133,14 +134,14 @@ func apply(ctx context.Context, db *sqlx.DB, mig migration) error {
 func Migrate(ctx context.Context, db *sqlx.DB) error {
 	version, err := getVersion(ctx, db)
 	if err != nil {
-		log.WithError(err).Error("unable to get current db migration state")
+		slog.Error("unable to get current db migration state", "error", err)
 		return err
 	}
 
-	log.WithField("version", version).Info("database at migration")
+	slog.Info("database at migration", "version", version)
 
 	if version > migrations[len(migrations)-1].version {
-		log.Errorf("db version: %d is greater than max migration: %d", version, migrations[len(migrations)-1].version)
+		slog.Error(fmt.Sprintf("db version: %d is greater than max migration: %d", version, migrations[len(migrations)-1].version))
 	}
 
 	for _, mig := range migrations[version:] {
