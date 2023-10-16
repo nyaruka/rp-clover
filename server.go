@@ -4,6 +4,7 @@ package clover
 
 import (
 	"bytes"
+	"compress/flate"
 	"context"
 	"crypto/subtle"
 	"fmt"
@@ -41,7 +42,7 @@ func NewServer(config *Config, fs http.FileSystem) *Server {
 	server.router = router
 
 	// global middleware
-	router.Use(middleware.DefaultCompress)
+	router.Use(middleware.Compress(flate.DefaultCompression))
 	router.Use(middleware.StripSlashes)
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
@@ -99,9 +100,10 @@ func (s *Server) Start() error {
 		WriteTimeout: 30 * time.Second,
 	}
 
+	s.waitGroup.Add(1)
+
 	// and start serving HTTP
 	go func() {
-		s.waitGroup.Add(1)
 		defer s.waitGroup.Done()
 		err := s.server.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
