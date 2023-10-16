@@ -11,8 +11,8 @@ jobs:
       postgres:
         image: postgres:15-alpine
         env:
-          POSTGRES_DB: courier_test
-          POSTGRES_USER: courier_test
+          POSTGRES_DB: clover_test
+          POSTGRES_USER: clover_test
           POSTGRES_PASSWORD: temba
         ports:
           - 5432:5432

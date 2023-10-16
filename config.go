@@ -14,7 +14,7 @@ type Config struct {
 // NewConfig returns a new default configuration object
 func NewConfig() *Config {
 	config := Config{
-		DB:       "postgres://clover:clover@localhost/clover_test?sslmode=disable",
+		DB:       "postgres://clover_test:temba@localhost/clover_test?sslmode=disable",
 		LogLevel: "info",
 		Address:  "localhost",
 		Port:     8081,
