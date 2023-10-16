@@ -5,33 +5,37 @@ env:
 jobs:
   test:
     name: Test
-    
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: courier_test
+          POSTGRES_USER: courier_test
+          POSTGRES_PASSWORD: temba
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v1
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Install PostgreSQL
-      uses: harmon758/postgresql-action@v1
-      with:
-        postgresql version: '9.6'
-        postgresql db: clover_test
-        postgresql user: clover
-        postgresql password: clover
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ env.go-version }}
 
-    - name: Install Go
-      uses: actions/setup-go@v1
-      with:
-        go-version: ${{ env.go-version }}
+      - name: Run tests
+        run: go test -p=1 -coverprofile=coverage.text -covermode=atomic ./...
 
-    - name: Run tests
-      run: go test -p=1 -coverprofile=coverage.text -covermode=atomic ./...
-
-    - name: Upload coverage
-      if: success()
-      uses: codecov/codecov-action@v1
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Upload coverage
+        if: success()
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true
   
   release:
     name: Release
@@ -40,10 +44,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v1
+      uses: actions/checkout@v3
 
     - name: Install Go
-      uses: actions/setup-go@v1
+      uses: actions/setup-go@v3
       with:
         go-version: ${{ env.go-version }}
 
