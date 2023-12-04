@@ -2,11 +2,11 @@ build:
   main: ./cmd/rp-clover/main.go
   binary: rp-clover
   goos:
-    - windows
     - darwin
     - linux
   goarch:
     - amd64
+    - arm64
 
 archives:
   - files:
