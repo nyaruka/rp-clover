@@ -1,3 +1,7 @@
+v0.3.1 (2024-06-05)
+-------------------------
+ * Fix goreleaser action config
+
 v0.3.0 (2024-06-05)
 -------------------------
  * Update go to 1.22 and update  deps
