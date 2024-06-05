@@ -1,13 +1,13 @@
-# rp-clover 
+# 🍀 Clover 
 
-[![Build Status](https://travis-ci.org/nyaruka/rp-clover.svg?branch=main)](https://travis-ci.org/nyaruka/rp-clover) 
-[![codecov](https://codecov.io/gh/nyaruka/rp-clover/branch/main/graph/badge.svg)](https://codecov.io/gh/nyaruka/rp-clover) 
-[![Go Report Card](https://goreportcard.com/badge/github.com/nyaruka/rp-clover)](https://goreportcard.com/report/github.com/nyaruka/rp-clover)
+[![Build Status](https://github.com/nyaruka/rp-clover/workflows/CI/badge.svg)](https://github.com/nyaruka/rp-clover/actions?query=workflow%3ACI)
+[![codecov](https://codecov.io/gh/nyaruka/rp-clover/branch/main/graph/badge.svg)](https://codecov.io/gh/nyaruka/rp-clover)
 
-Router for incoming messages to RapidPro, takes care of changing contact affinity based on keywords and routing incoming messages based on that affinity.
+Router for incoming messages to RapidPro/TextIt, takes care of changing contact affinity based on keywords and routing 
+incoming messages based on that affinity.
 
 ```
-Clover takes care of routing RapidPro messages based on membership.
+Clover takes care of routing RapidPro/TextIt messages based on membership.
 
 Usage of clover:
   -address string
