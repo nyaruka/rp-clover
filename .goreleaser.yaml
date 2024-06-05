@@ -1,0 +1,15 @@
+version: 2
+builds:
+  - main: ./cmd/rp-clover/main.go
+    binary: rp-clover
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - files:
+    - LICENSE
+    - README.md

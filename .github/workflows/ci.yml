@@ -52,7 +52,7 @@ jobs:
         go-version: ${{ env.go-version }}
 
     - name: Publish release
-      uses: goreleaser/goreleaser-action@v5
+      uses: goreleaser/goreleaser-action@v6
       if: ${{ !contains(github.ref, '-') }}
       with:
         version: latest
@@ -61,7 +61,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Publish non-master release
-      uses: goreleaser/goreleaser-action@v5
+      uses: goreleaser/goreleaser-action@v6
       if: contains(github.ref, '-')
       with:
         version: latest
