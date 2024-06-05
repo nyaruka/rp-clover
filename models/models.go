@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
-	validator "gopkg.in/go-playground/validator.v9"
 )
 
 // Channel represents our channels
