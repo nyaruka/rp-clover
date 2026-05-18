@@ -1,3 +1,7 @@
+v0.4.1 (2026-05-18)
+-------------------------
+ * Mark workspace as safe git directory before goreleaser
+
 v0.4.0 (2026-05-18)
 -------------------------
  * Move default port from 8081 to 8060 with transitional dual listener
