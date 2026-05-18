@@ -94,7 +94,7 @@ func TestHandler(t *testing.T) {
 		tsBody = tc.responseText
 		tsReq = nil
 
-		url := "http://localhost:8081" + tc.path
+		url := "http://localhost:8060" + tc.path
 		var req *http.Request
 		if tc.values == nil {
 			req, err = http.NewRequest(http.MethodGet, url, nil)

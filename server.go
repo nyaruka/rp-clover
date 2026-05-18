@@ -21,11 +21,12 @@ import (
 
 // Server is a clover server, which handles incoming handle requests and configuration updates
 type Server struct {
-	rt        *runtime.Runtime
-	router    *chi.Mux
-	server    *http.Server
-	waitGroup sync.WaitGroup
-	fs        http.FileSystem
+	rt           *runtime.Runtime
+	router       *chi.Mux
+	server       *http.Server
+	legacyServer *http.Server
+	waitGroup    sync.WaitGroup
+	fs           http.FileSystem
 }
 
 // NewServer creates a new clover server
@@ -92,6 +93,31 @@ func (s *Server) Start() error {
 		"version", s.rt.Config.Version,
 	)
 
+	// optionally also bind a deprecated legacy port during the 8081->8060 migration
+	if s.rt.Config.LegacyPort != 0 {
+		s.legacyServer = &http.Server{
+			Addr:         fmt.Sprintf("%s:%d", s.rt.Config.Address, s.rt.Config.LegacyPort),
+			Handler:      s.router,
+			ReadTimeout:  30 * time.Second,
+			WriteTimeout: 30 * time.Second,
+		}
+
+		s.waitGroup.Add(1)
+
+		go func() {
+			defer s.waitGroup.Done()
+			err := s.legacyServer.ListenAndServe()
+			if err != nil && !errors.Is(err, http.ErrServerClosed) {
+				slog.Error("legacy http server error", "error", err)
+			}
+		}()
+
+		slog.Warn("listening on deprecated legacy port",
+			"address", s.rt.Config.Address,
+			"port", s.rt.Config.LegacyPort,
+		)
+	}
+
 	return nil
 }
 
@@ -99,6 +125,12 @@ func (s *Server) Start() error {
 func (s *Server) Stop() error {
 	if err := s.server.Shutdown(context.Background()); err != nil {
 		slog.Error("error shutting down server", "error", err)
+	}
+
+	if s.legacyServer != nil {
+		if err := s.legacyServer.Shutdown(context.Background()); err != nil {
+			slog.Error("error shutting down legacy server", "error", err)
+		}
 	}
 
 	// wait for everything to stop
