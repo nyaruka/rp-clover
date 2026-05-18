@@ -1,3 +1,7 @@
+v0.4.2 (2026-05-18)
+-------------------------
+ * Remove the transitional legacy 8081 listener
+
 v0.4.1 (2026-05-18)
 -------------------------
  * Mark workspace as safe git directory before goreleaser
