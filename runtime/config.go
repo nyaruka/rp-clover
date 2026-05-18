@@ -11,19 +11,21 @@ type Config struct {
 	SentryDSN string `help:"the sentry configuration to log errors to, if any"`
 	Version   string `help:"the version being run"`
 	Password  string `help:"the password for the admin user"`
-	Address   string `help:"the address clover will listen on"`
-	Port      int    `help:"the port clover will listen on"`
+	Address    string `help:"the address clover will listen on"`
+	Port       int    `help:"the port clover will listen on"`
+	LegacyPort int    `help:"deprecated secondary port to also listen on during the 8081->8060 migration (0 to disable)"`
 }
 
 // NewDefaultConfig returns a new default configuration object
 func NewDefaultConfig() *Config {
 	return &Config{
-		DB:       "postgres://clover_test:temba@localhost/clover_test?sslmode=disable",
-		LogLevel: "info",
-		Address:  "localhost",
-		Port:     8081,
-		Version:  "Dev",
-		Password: "sesame123",
+		DB:         "postgres://clover_test:temba@localhost/clover_test?sslmode=disable",
+		LogLevel:   "info",
+		Address:    "localhost",
+		Port:       8060,
+		LegacyPort: 8081,
+		Version:    "Dev",
+		Password:   "sesame123",
 	}
 }
 
