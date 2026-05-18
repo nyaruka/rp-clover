@@ -18,8 +18,6 @@ Usage of clover:
     	print where config values are coming from
   -help
     	print usage information
-  -legacy-port int
-    	deprecated secondary port to also listen on during the 8081->8060 migration (0 to disable) (default 8081)
   -log-level string
     	the log level, one of error, warn, info, debug (default "info")
   -password string
@@ -34,7 +32,6 @@ Usage of clover:
 Environment variables:
                               CLOVER_ADDRESS - string
                                    CLOVER_DB - string
-                          CLOVER_LEGACY_PORT - int
                             CLOVER_LOG_LEVEL - string
                              CLOVER_PASSWORD - string
                                  CLOVER_PORT - int
