@@ -12,15 +12,20 @@ import (
 	"time"
 
 	"github.com/nyaruka/rp-clover/models"
+	"github.com/nyaruka/rp-clover/runtime"
 	"github.com/stretchr/testify/assert"
 )
 
 func setUpTest(t *testing.T) *Server {
-	config := NewConfig()
-	config.DB = "postgres://clover_test:temba@postgres:5432/clover_test?sslmode=disable"
-	server := NewServer(config, http.Dir("static"))
+	cfg := runtime.NewDefaultConfig()
+	cfg.DB = "postgres://clover_test:temba@postgres:5432/clover_test?sslmode=disable"
+	rt, err := runtime.NewRuntime(cfg)
+	if err != nil {
+		t.Fatalf("error creating runtime: %s", err)
+	}
+	server := NewServer(rt, http.Dir("static"))
 
-	err := server.Start()
+	err = server.Start()
 	if err != nil {
 		t.Fatalf("error starting server: %s", err)
 	}
@@ -139,10 +144,10 @@ func TestMapping(t *testing.T) {
 		err := makeTestRequest(tc.path, tc.method, nil, true, tc.assertStatus, tc.assertText)
 		assert.NoError(t, err, "test %d: error making request", i)
 
-		interchange, err := models.GetInterchange(context.Background(), s.db, tc.assertInterchange)
+		interchange, err := models.GetInterchange(context.Background(), s.rt.DB, tc.assertInterchange)
 		assert.NoError(t, err, "test %d: error looking up interchange", i)
 
-		channel, err := models.GetChannelForURN(context.Background(), s.db, interchange, tc.assertURN)
+		channel, err := models.GetChannelForURN(context.Background(), s.rt.DB, interchange, tc.assertURN)
 		assert.NoError(t, err, "test %d: error looking up channel", i)
 
 		if tc.assertChannelUUID == "" {

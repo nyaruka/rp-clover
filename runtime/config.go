@@ -1,4 +1,8 @@
-package clover
+package runtime
+
+import (
+	"github.com/nyaruka/ezconf"
+)
 
 // Config is our top level configuration object
 type Config struct {
@@ -11,9 +15,9 @@ type Config struct {
 	Port      int    `help:"the port clover will listen on"`
 }
 
-// NewConfig returns a new default configuration object
-func NewConfig() *Config {
-	config := Config{
+// NewDefaultConfig returns a new default configuration object
+func NewDefaultConfig() *Config {
+	return &Config{
 		DB:       "postgres://clover_test:temba@localhost/clover_test?sslmode=disable",
 		LogLevel: "info",
 		Address:  "localhost",
@@ -21,6 +25,12 @@ func NewConfig() *Config {
 		Version:  "Dev",
 		Password: "sesame123",
 	}
+}
 
-	return &config
+// LoadConfig loads the config from clover.toml + environment + flags via ezconf
+func LoadConfig() *Config {
+	cfg := NewDefaultConfig()
+	loader := ezconf.NewLoader(cfg, "clover", "Clover takes care of routing RapidPro messages based on membership.", []string{"clover.toml"})
+	loader.MustLoad()
+	return cfg
 }

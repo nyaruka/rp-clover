@@ -20,7 +20,7 @@ func handleInterchange(s *Server, w http.ResponseWriter, r *http.Request) error 
 	interchangeUUID := chi.URLParam(r, "interchangeUUID")
 
 	// look up our interchange
-	interchange, err := models.GetInterchange(r.Context(), s.db, interchangeUUID)
+	interchange, err := models.GetInterchange(r.Context(), s.rt.DB, interchangeUUID)
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func handleInterchange(s *Server, w http.ResponseWriter, r *http.Request) error 
 
 		// we found a matching channel, associate this URN
 		if routedChannel != nil {
-			err := models.SetChannelForURN(r.Context(), s.db, interchange, routedChannel, urn)
+			err := models.SetChannelForURN(r.Context(), s.rt.DB, interchange, routedChannel, urn)
 			if err != nil {
 				return err
 			}
@@ -71,7 +71,7 @@ func handleInterchange(s *Server, w http.ResponseWriter, r *http.Request) error 
 
 	// if not, look up current mapping for this URN
 	if routedChannel == nil {
-		routedChannel, err = models.GetChannelForURN(r.Context(), s.db, interchange, urn)
+		routedChannel, err = models.GetChannelForURN(r.Context(), s.rt.DB, interchange, urn)
 		if err != nil {
 			return err
 		}
