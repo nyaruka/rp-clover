@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -18,9 +17,7 @@ import (
 
 func setUpTest(t *testing.T) *Server {
 	config := NewConfig()
-	if host := os.Getenv("POSTGRES_HOST"); host != "" {
-		config.DB = "postgres://clover_test:temba@" + host + "/clover_test?sslmode=disable"
-	}
+	config.DB = "postgres://clover_test:temba@postgres:5432/clover_test?sslmode=disable"
 	server := NewServer(config, http.Dir("static"))
 
 	err := server.Start()

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"os"
 	"testing"
 
 	"github.com/jmoiron/sqlx"
@@ -13,11 +12,7 @@ import (
 )
 
 func setUp(t *testing.T) *sqlx.DB {
-	host := os.Getenv("POSTGRES_HOST")
-	if host == "" {
-		host = "localhost"
-	}
-	db, err := sqlx.Open("postgres", "postgres://clover_test:temba@"+host+"/clover_test?sslmode=disable")
+	db, err := sqlx.Open("postgres", "postgres://clover_test:temba@postgres:5432/clover_test?sslmode=disable")
 	if err != nil {
 		t.Fatalf("error connecting to db: %s", err)
 	}
