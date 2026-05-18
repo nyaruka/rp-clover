@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/nyaruka/rp-clover/models"
 )
 
@@ -34,7 +34,7 @@ func renderInterchanges(s *Server, w http.ResponseWriter, r *http.Request, confi
 		return err
 	}
 
-	err = tpl.Execute(w, map[string]interface{}{
+	err = tpl.Execute(w, map[string]any{
 		"config":  string(config),
 		"message": message,
 		"error":   errMsg,

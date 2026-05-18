@@ -58,8 +58,8 @@ func TestHandler(t *testing.T) {
 	defer server.Close()
 
 	// set up our config, replacing our server with our test server
-	config := strings.Replace(handlerConfig, "https://handler1", server.URL+"/handler1", -1)
-	config = strings.Replace(config, "https://handler2", server.URL+"/handler2", -1)
+	config := strings.ReplaceAll(handlerConfig, "https://handler1", server.URL+"/handler1")
+	config = strings.ReplaceAll(config, "https://handler2", server.URL+"/handler2")
 	err := makeTestRequest("/admin", http.MethodPost, url.Values{"config": []string{config}}, true, 200, "configuration saved")
 	assert.NoError(t, err)
 

@@ -17,6 +17,7 @@ import (
 
 func setUpTest(t *testing.T) *Server {
 	config := NewConfig()
+	config.DB = "postgres://clover_test:temba@postgres:5432/clover_test?sslmode=disable"
 	server := NewServer(config, http.Dir("static"))
 
 	err := server.Start()

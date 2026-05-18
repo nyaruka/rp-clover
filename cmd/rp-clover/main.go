@@ -1,4 +1,3 @@
-//go:generate vfsgendev -source="statik".Assets
 package main
 
 import (
@@ -15,11 +14,8 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/nyaruka/ezconf"
 	clover "github.com/nyaruka/rp-clover"
-	"github.com/rakyll/statik/fs"
 	slogmulti "github.com/samber/slog-multi"
-	slogsentry "github.com/samber/slog-sentry"
-
-	_ "github.com/nyaruka/rp-clover/statik"
+	slogsentry "github.com/samber/slog-sentry/v2"
 )
 
 var version = "Dev"
@@ -33,7 +29,6 @@ func main() {
 	err := level.UnmarshalText([]byte(config.LogLevel))
 	if err != nil {
 		log.Fatalf("invalid log level %s", level)
-		os.Exit(1)
 	}
 
 	// configure our logger
@@ -51,7 +46,6 @@ func main() {
 		})
 		if err != nil {
 			log.Fatalf("error initiating sentry client, error %s, dsn %s", err, config.SentryDSN)
-			os.Exit(1)
 		}
 
 		defer sentry.Flush(2 * time.Second)
@@ -78,34 +72,30 @@ func main() {
 		config.DB += "?TimeZone=UTC"
 	}
 
-	var templateFS http.FileSystem
-
 	// if we have a custom version, use it
 	if version != "Dev" {
 		config.Version = version
 	}
 
+	var templateFS http.FileSystem
 	if config.Version == "Dev" {
 		templateFS = http.Dir("static")
 	} else {
-		templateFS, err = fs.New()
-		if err != nil {
-			logger.Error("error initializing statik filesystem", "error", err)
-		}
+		templateFS = clover.Assets()
 	}
 
-	clover := clover.NewServer(config, templateFS)
+	srv := clover.NewServer(config, templateFS)
 	logger.Info("starting clover")
-	err = clover.Start()
+	err = srv.Start()
 	if err != nil {
 		logger.Error("error starting clover", "error", err)
 	}
 
-	ch := make(chan os.Signal)
+	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	logger.Info("stopping clover", "signal", <-ch)
 
-	err = clover.Stop()
+	err = srv.Stop()
 	if err != nil {
 		logger.Error("error stopping clover", "error", err)
 	}

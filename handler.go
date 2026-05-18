@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/nyaruka/rp-clover/models"
 )
 
@@ -111,7 +111,7 @@ func forwardRequest(ctx context.Context, w http.ResponseWriter, r *http.Request,
 	}
 
 	// create our new outbound request
-	outRequest, err := http.NewRequest(r.Method, outURL.String(), bytes.NewReader([]byte(r.PostForm.Encode())))
+	outRequest, err := http.NewRequestWithContext(ctx, r.Method, outURL.String(), bytes.NewReader([]byte(r.PostForm.Encode())))
 	if err != nil {
 		return err
 	}
