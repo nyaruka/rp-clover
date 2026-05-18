@@ -5,6 +5,7 @@ import (
 	"compress/flate"
 	"context"
 	"crypto/subtle"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -104,7 +105,7 @@ func (s *Server) Start() error {
 	go func() {
 		defer s.waitGroup.Done()
 		err := s.server.ListenAndServe()
-		if err != nil && err != http.ErrServerClosed {
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("http server error", "error", err)
 		}
 	}()

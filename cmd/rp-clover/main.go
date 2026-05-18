@@ -29,7 +29,6 @@ func main() {
 	err := level.UnmarshalText([]byte(config.LogLevel))
 	if err != nil {
 		log.Fatalf("invalid log level %s", level)
-		os.Exit(1)
 	}
 
 	// configure our logger
@@ -47,7 +46,6 @@ func main() {
 		})
 		if err != nil {
 			log.Fatalf("error initiating sentry client, error %s, dsn %s", err, config.SentryDSN)
-			os.Exit(1)
 		}
 
 		defer sentry.Flush(2 * time.Second)

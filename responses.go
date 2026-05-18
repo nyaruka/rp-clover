@@ -15,10 +15,10 @@ type errorResponse struct {
 // dataResponse is our payload for data responses
 type dataResponse struct {
 	Message string      `json:"message"`
-	Data    interface{} `json:"data"`
+	Data    any `json:"data"`
 }
 
-func writeDataResponse(ctx context.Context, w http.ResponseWriter, statusCode int, message string, data interface{}) error {
+func writeDataResponse(ctx context.Context, w http.ResponseWriter, statusCode int, message string, data any) error {
 	return writeJSONResponse(ctx, w, statusCode, dataResponse{message, data})
 }
 
@@ -30,7 +30,7 @@ func writeErrorResponse(ctx context.Context, w http.ResponseWriter, statusCode i
 	return writeJSONResponse(ctx, w, statusCode, errorResponse)
 }
 
-func writeJSONResponse(ctx context.Context, w http.ResponseWriter, statusCode int, response interface{}) error {
+func writeJSONResponse(ctx context.Context, w http.ResponseWriter, statusCode int, response any) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	return json.NewEncoder(w).Encode(response)

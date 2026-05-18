@@ -3,8 +3,11 @@ package models
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -124,14 +127,14 @@ func UpdateInterchangeConfig(ctx context.Context, db *sqlx.DB, interchanges []*I
 		}
 	} else {
 		// otherwise, remove all that we haven't seen
-		interchangeUUIDs := mapKeys(seenInterchanges)
+		interchangeUUIDs := slices.Collect(maps.Keys(seenInterchanges))
 		_, err = tx.ExecContext(ctx, `DELETE FROM interchanges WHERE NOT ARRAY[uuid] <@ $1`, pq.Array(interchangeUUIDs))
 		if err != nil {
 			return err
 		}
 
 		// remove all channels we didn't see
-		channelUUIDs := mapKeys(seenChannels)
+		channelUUIDs := slices.Collect(maps.Keys(seenChannels))
 		_, err = tx.ExecContext(ctx, `DELETE FROM channels WHERE NOT ARRAY[uuid] <@ $1`, pq.Array(channelUUIDs))
 		if err != nil {
 			return err
@@ -176,14 +179,14 @@ func GetInterchange(ctx context.Context, db *sqlx.DB, uuid string) (*Interchange
 	cacheLock.RUnlock()
 
 	// found it and loaded less than a minute ago? return it straight away
-	if found && time.Now().Sub(interchange.loadedOn) < time.Minute {
+	if found && time.Since(interchange.loadedOn) < time.Minute {
 		return interchange, nil
 	}
 
 	// allocate an interchange to load into
 	interchange = &Interchange{}
 	err := db.GetContext(ctx, interchange, `SELECT * FROM interchanges WHERE uuid = $1`, uuid)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -216,9 +219,7 @@ func getChannelsForInterchange(ctx context.Context, db *sqlx.DB, interchange *In
 	found := false
 	for i, channel := range channels {
 		if channel.UUID == interchange.DefaultChannelUUID {
-			tmp := channels[0]
-			channels[0] = channel
-			channels[i] = tmp
+			channels[0], channels[i] = channels[i], channels[0]
 			found = true
 			break
 		}
@@ -265,7 +266,7 @@ WHERE u.interchange_uuid = $1 AND u.urn = $2 AND u.channel_uuid = c.uuid
 func GetChannelForURN(ctx context.Context, db *sqlx.DB, interchange *Interchange, urn string) (*Channel, error) {
 	channel := Channel{}
 	err := db.GetContext(ctx, &channel, getURNMappingSQL, interchange.UUID, urn)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -293,14 +294,6 @@ var (
 	interchangeCache = map[string]*Interchange{}
 	cacheLock        = sync.RWMutex{}
 )
-
-func mapKeys(m map[string]bool) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	return keys
-}
 
 func validateInterchangeConfig(interchanges []*Interchange) error {
 	// validate our interchanges as a whole
@@ -355,7 +348,7 @@ func validateInterchangeConfig(interchanges []*Interchange) error {
 }
 
 // validate validates the passe din struct using our shared validator instance
-func validateObject(obj interface{}) error {
+func validateObject(obj any) error {
 	err := validate.Struct(obj)
 	if err != nil {
 		return err
