@@ -1,3 +1,8 @@
+v0.4.0 (2026-05-18)
+-------------------------
+ * Move default port from 8081 to 8060 with transitional dual listener
+ * Update Go, deps, GitHub Actions; add review and CLA workflows
+
 v0.3.1 (2024-06-05)
 -------------------------
  * Fix goreleaser action config
