@@ -16,25 +16,23 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/jmoiron/sqlx"
-	"github.com/nyaruka/rp-clover/migrations"
+	"github.com/nyaruka/rp-clover/runtime"
 )
 
 // Server is a clover server, which handles incoming handle requests and configuration updates
 type Server struct {
-	config    *Config
+	rt        *runtime.Runtime
 	router    *chi.Mux
 	server    *http.Server
-	db        *sqlx.DB
 	waitGroup sync.WaitGroup
 	fs        http.FileSystem
 }
 
 // NewServer creates a new clover server
-func NewServer(config *Config, fs http.FileSystem) *Server {
+func NewServer(rt *runtime.Runtime, fs http.FileSystem) *Server {
 	server := &Server{
-		config: config,
-		fs:     fs,
+		rt: rt,
+		fs: fs,
 	}
 
 	router := chi.NewRouter()
@@ -64,28 +62,6 @@ func NewServer(config *Config, fs http.FileSystem) *Server {
 
 // Start starts our clover server, returning any errors encountered
 func (s *Server) Start() error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-
-	db, err := sqlx.Open("postgres", s.config.DB)
-	if err != nil {
-		return err
-	}
-	db.SetMaxOpenConns(4)
-	s.db = db
-
-	err = s.db.PingContext(ctx)
-	if err != nil {
-		slog.Error("unable to ping database", "error", err)
-		return err
-	}
-
-	// migrate our db forward
-	err = migrations.Migrate(ctx, db)
-	if err != nil {
-		return err
-	}
-
 	// wire up our main pages
 	s.router.NotFound(s.handle404)
 	s.router.MethodNotAllowed(s.handle405)
@@ -93,7 +69,7 @@ func (s *Server) Start() error {
 
 	// configure timeouts on our server
 	s.server = &http.Server{
-		Addr:         fmt.Sprintf("%s:%d", s.config.Address, s.config.Port),
+		Addr:         fmt.Sprintf("%s:%d", s.rt.Config.Address, s.rt.Config.Port),
 		Handler:      s.router,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
@@ -111,9 +87,9 @@ func (s *Server) Start() error {
 	}()
 
 	slog.Info("clover started",
-		"address", s.config.Address,
-		"port", s.config.Port,
-		"version", s.config.Version,
+		"address", s.rt.Config.Address,
+		"port", s.rt.Config.Port,
+		"version", s.rt.Config.Version,
 	)
 
 	return nil
@@ -151,7 +127,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	var buf bytes.Buffer
 	buf.WriteString("<title>clover</title><body><pre>\n")
 	buf.WriteString(splash)
-	buf.WriteString(s.config.Version)
+	buf.WriteString(s.rt.Config.Version)
 	buf.WriteString("</pre></body>")
 	w.Write(buf.Bytes())
 }
@@ -175,7 +151,7 @@ func (s *Server) handle405(w http.ResponseWriter, r *http.Request) {
 func (s *Server) adminOnly(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, pass, ok := r.BasicAuth()
-		if !ok || subtle.ConstantTimeCompare([]byte(user), []byte("admin")) != 1 || subtle.ConstantTimeCompare([]byte(pass), []byte(s.config.Password)) != 1 {
+		if !ok || subtle.ConstantTimeCompare([]byte(user), []byte("admin")) != 1 || subtle.ConstantTimeCompare([]byte(pass), []byte(s.rt.Config.Password)) != 1 {
 			w.Header().Set("WWW-Authenticate", `Basic realm="Clover"`)
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(http.StatusText(http.StatusUnauthorized)))

@@ -12,8 +12,8 @@ import (
 
 	"github.com/getsentry/sentry-go"
 	_ "github.com/lib/pq"
-	"github.com/nyaruka/ezconf"
 	clover "github.com/nyaruka/rp-clover"
+	"github.com/nyaruka/rp-clover/runtime"
 	slogmulti "github.com/samber/slog-multi"
 	slogsentry "github.com/samber/slog-sentry/v2"
 )
@@ -21,12 +21,10 @@ import (
 var version = "Dev"
 
 func main() {
-	config := clover.NewConfig()
-	loader := ezconf.NewLoader(&config, "clover", "Clover takes care of routing RapidPro messages based on membership.", []string{"clover.toml"})
-	loader.MustLoad()
+	cfg := runtime.LoadConfig()
 
 	var level slog.Level
-	err := level.UnmarshalText([]byte(config.LogLevel))
+	err := level.UnmarshalText([]byte(cfg.LogLevel))
 	if err != nil {
 		log.Fatalf("invalid log level %s", level)
 	}
@@ -39,13 +37,13 @@ func main() {
 	logger.Info("starting clover", "version", version)
 
 	// if we have a DSN entry, try to initialize it
-	if config.SentryDSN != "" {
+	if cfg.SentryDSN != "" {
 		err := sentry.Init(sentry.ClientOptions{
-			Dsn:           config.SentryDSN,
+			Dsn:           cfg.SentryDSN,
 			EnableTracing: false,
 		})
 		if err != nil {
-			log.Fatalf("error initiating sentry client, error %s, dsn %s", err, config.SentryDSN)
+			log.Fatalf("error initiating sentry client, error %s, dsn %s", err, cfg.SentryDSN)
 		}
 
 		defer sentry.Flush(2 * time.Second)
@@ -61,30 +59,36 @@ func main() {
 	}
 
 	// our settings shouldn't contain a timezone, nothing will work right with this not being a constant UTC
-	if strings.Contains(config.DB, "TimeZone") {
-		logger.Error("invalid db connection string, do not specify a timezone, archiver always uses UTC", "db", config.DB)
+	if strings.Contains(cfg.DB, "TimeZone") {
+		logger.Error("invalid db connection string, do not specify a timezone, archiver always uses UTC", "db", cfg.DB)
 	}
 
 	// force our DB connection to be in UTC
-	if strings.Contains(config.DB, "?") {
-		config.DB += "&TimeZone=UTC"
+	if strings.Contains(cfg.DB, "?") {
+		cfg.DB += "&TimeZone=UTC"
 	} else {
-		config.DB += "?TimeZone=UTC"
+		cfg.DB += "?TimeZone=UTC"
 	}
 
 	// if we have a custom version, use it
 	if version != "Dev" {
-		config.Version = version
+		cfg.Version = version
 	}
 
 	var templateFS http.FileSystem
-	if config.Version == "Dev" {
+	if cfg.Version == "Dev" {
 		templateFS = http.Dir("static")
 	} else {
 		templateFS = clover.Assets()
 	}
 
-	srv := clover.NewServer(config, templateFS)
+	rt, err := runtime.NewRuntime(cfg)
+	if err != nil {
+		logger.Error("error creating runtime", "error", err)
+		os.Exit(1)
+	}
+
+	srv := clover.NewServer(rt, templateFS)
 	logger.Info("starting clover")
 	err = srv.Start()
 	if err != nil {

@@ -47,7 +47,7 @@ func renderInterchanges(s *Server, w http.ResponseWriter, r *http.Request, confi
 }
 
 func viewConfig(s *Server, w http.ResponseWriter, r *http.Request) error {
-	interchanges, err := models.GetInterchangeConfig(r.Context(), s.db)
+	interchanges, err := models.GetInterchangeConfig(r.Context(), s.rt.DB)
 	if err != nil {
 		slog.Error("error loading interchange config", "error", err)
 		return err
@@ -61,7 +61,7 @@ func viewConfig(s *Server, w http.ResponseWriter, r *http.Request) error {
 }
 
 func updateConfig(s *Server, w http.ResponseWriter, r *http.Request) error {
-	interchanges, err := models.GetInterchangeConfig(r.Context(), s.db)
+	interchanges, err := models.GetInterchangeConfig(r.Context(), s.rt.DB)
 	if err != nil {
 		return err
 	}
@@ -86,13 +86,13 @@ func updateConfig(s *Server, w http.ResponseWriter, r *http.Request) error {
 		return renderInterchanges(s, w, r, config, "", err)
 	}
 
-	err = models.UpdateInterchangeConfig(r.Context(), s.db, interchanges)
+	err = models.UpdateInterchangeConfig(r.Context(), s.rt.DB, interchanges)
 	if err != nil {
 		return renderInterchanges(s, w, r, config, "", err)
 	}
 
 	// reselect our current interchanges
-	interchanges, err = models.GetInterchangeConfig(r.Context(), s.db)
+	interchanges, err = models.GetInterchangeConfig(r.Context(), s.rt.DB)
 	if err != nil {
 		slog.Error("error loading interchange config", "error", err)
 		return err
@@ -124,7 +124,7 @@ func handleMap(s *Server, w http.ResponseWriter, r *http.Request) error {
 	interchangeUUID := chi.URLParam(r, "interchangeUUID")
 
 	// look up our interchange
-	interchange, err := models.GetInterchange(r.Context(), s.db, interchangeUUID)
+	interchange, err := models.GetInterchange(r.Context(), s.rt.DB, interchangeUUID)
 	if err != nil {
 		return err
 	}
@@ -157,14 +157,14 @@ func handleMap(s *Server, w http.ResponseWriter, r *http.Request) error {
 		}
 
 		// associate our URN
-		err := models.SetChannelForURN(r.Context(), s.db, interchange, channel, urn)
+		err := models.SetChannelForURN(r.Context(), s.rt.DB, interchange, channel, urn)
 		if err != nil {
 			return err
 		}
 
 		return writeDataResponse(r.Context(), w, http.StatusOK, "mapping created", nil)
 	} else if r.Method == http.MethodDelete {
-		err := models.ClearChannelForURN(r.Context(), s.db, interchange, urn)
+		err := models.ClearChannelForURN(r.Context(), s.rt.DB, interchange, urn)
 		if err != nil {
 			return err
 		}
