@@ -58,9 +58,15 @@ func main() {
 		slog.SetDefault(logger)
 	}
 
+	// warn if the admin interface is left on the default password
+	if cfg.Password == runtime.DefaultPassword {
+		logger.Warn("using default admin password, set CLOVER_PASSWORD to secure the admin interface")
+	}
+
 	// our settings shouldn't contain a timezone, nothing will work right with this not being a constant UTC
 	if strings.Contains(cfg.DB, "TimeZone") {
-		logger.Error("invalid db connection string, do not specify a timezone, archiver always uses UTC", "db", cfg.DB)
+		logger.Error("invalid db connection string, do not specify a timezone, clover always uses UTC")
+		os.Exit(1)
 	}
 
 	// force our DB connection to be in UTC

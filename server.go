@@ -19,6 +19,11 @@ import (
 	"github.com/nyaruka/rp-clover/runtime"
 )
 
+// shutdownTimeout bounds how long we wait for in-flight requests to drain on
+// shutdown before forcing connections closed; keep it below the platform's stop
+// timeout so the process exits cleanly rather than being killed.
+const shutdownTimeout = 15 * time.Second
+
 // Server is a clover server, which handles incoming handle requests and configuration updates
 type Server struct {
 	rt        *runtime.Runtime
@@ -97,12 +102,21 @@ func (s *Server) Start() error {
 
 // Stop stops our clover server, returning any errors encountered
 func (s *Server) Stop() error {
-	if err := s.server.Shutdown(context.Background()); err != nil {
+	// give in-flight requests a bounded window to drain before forcing closed
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer cancel()
+
+	if err := s.server.Shutdown(ctx); err != nil {
 		slog.Error("error shutting down server", "error", err)
 	}
 
 	// wait for everything to stop
 	s.waitGroup.Wait()
+
+	// close the database pool
+	if err := s.rt.DB.Close(); err != nil {
+		slog.Error("error closing database", "error", err)
+	}
 
 	slog.Info("clover stopped")
 	return nil
