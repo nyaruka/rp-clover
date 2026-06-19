@@ -1,0 +1,21 @@
+# VCS and CI
+.git
+.github
+
+# locally-provided, gitignored tooling (not needed in the image)
+deploy
+fabfile.py
+*.pyc
+
+# build artifacts and test output
+rp-clover
+*.test
+*.out
+
+# docs and build/release config not needed at build time
+CHANGELOG.md
+README.md
+LICENSE
+.goreleaser.yaml
+Dockerfile
+.dockerignore
