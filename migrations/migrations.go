@@ -146,8 +146,23 @@ func Migrate(ctx context.Context, db *sqlx.DB) error {
 	}
 	defer conn.Close()
 
-	if _, err := conn.ExecContext(ctx, `SELECT pg_advisory_lock($1)`, migrateLockID); err != nil {
-		return fmt.Errorf("error acquiring migration lock: %w", err)
+	// acquire the lock by polling, so a waiting instance logs progress instead of
+	// blocking opaquely until its context deadline (e.g. while another instance
+	// is mid-migration during a deploy)
+	for {
+		var locked bool
+		if err := conn.GetContext(ctx, &locked, `SELECT pg_try_advisory_lock($1)`, migrateLockID); err != nil {
+			return fmt.Errorf("error acquiring migration lock: %w", err)
+		}
+		if locked {
+			break
+		}
+		slog.Info("waiting on migration lock held by another instance")
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("timed out waiting for migration lock: %w", ctx.Err())
+		case <-time.After(time.Second):
+		}
 	}
 	defer func() {
 		// the lock also releases when the connection closes, but release it

@@ -106,20 +106,16 @@ func (s *Server) Stop() error {
 	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 
-	if err := s.server.Shutdown(ctx); err != nil {
-		slog.Error("error shutting down server", "error", err)
-	}
+	shutdownErr := s.server.Shutdown(ctx)
 
 	// wait for everything to stop
 	s.waitGroup.Wait()
 
 	// close the database pool
-	if err := s.rt.DB.Close(); err != nil {
-		slog.Error("error closing database", "error", err)
-	}
+	closeErr := s.rt.DB.Close()
 
 	slog.Info("clover stopped")
-	return nil
+	return errors.Join(shutdownErr, closeErr)
 }
 
 type serverHandlerFunc func(*Server, http.ResponseWriter, *http.Request) error
