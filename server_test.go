@@ -19,6 +19,7 @@ import (
 func setUpTest(t *testing.T) *Server {
 	cfg := runtime.NewDefaultConfig()
 	cfg.DB = "postgres://clover_test:temba@postgres:5432/clover_test?sslmode=disable"
+	cfg.Password = "sesame123"
 	rt, err := runtime.NewRuntime(cfg)
 	if err != nil {
 		t.Fatalf("error creating runtime: %s", err)

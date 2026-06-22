@@ -21,7 +21,7 @@ Usage of clover:
   -log-level string
     	the log level, one of error, warn, info, debug (default "info")
   -password string
-    	the password for the admin user (default "sesame123")
+    	the password for the admin user (required)
   -port int
     	the port clover will listen on (default 8060)
   -sentry-dsn string
