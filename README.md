@@ -11,7 +11,7 @@ Clover takes care of routing RapidPro/TextIt messages based on membership.
 
 Usage of clover:
   -address string
-    	the address clover will listen on (default "localhost")
+    	the address clover will listen on, empty means all interfaces
   -db string
     	the connection string for our database (default "postgres://localhost/clover_test?sslmode=disable")
   -debug-conf

@@ -130,8 +130,48 @@ func apply(ctx context.Context, db *sqlx.DB, mig migration) error {
 	return nil
 }
 
+// migrateLockID is a fixed key for the Postgres advisory lock that serializes
+// migrations, so multiple instances starting concurrently (e.g. a rolling deploy
+// that introduces a new migration) can't try to apply the same migration twice.
+const migrateLockID int64 = 0x636c6f766572 // "clover"
+
 // Migrate installs any missing migrations for the passed in DB
 func Migrate(ctx context.Context, db *sqlx.DB) error {
+	// pin a single connection and hold a session-level advisory lock for the
+	// duration, so only one instance migrates at a time; others block here and
+	// then find nothing to do once they acquire the lock
+	conn, err := db.Connx(ctx)
+	if err != nil {
+		return fmt.Errorf("error acquiring connection for migration: %w", err)
+	}
+	defer conn.Close()
+
+	// acquire the lock by polling, so a waiting instance logs progress instead of
+	// blocking opaquely until its context deadline (e.g. while another instance
+	// is mid-migration during a deploy)
+	for {
+		var locked bool
+		if err := conn.GetContext(ctx, &locked, `SELECT pg_try_advisory_lock($1)`, migrateLockID); err != nil {
+			return fmt.Errorf("error acquiring migration lock: %w", err)
+		}
+		if locked {
+			break
+		}
+		slog.Info("waiting on migration lock held by another instance")
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("timed out waiting for migration lock: %w", ctx.Err())
+		case <-time.After(time.Second):
+		}
+	}
+	defer func() {
+		// the lock also releases when the connection closes, but release it
+		// explicitly so a waiting instance can proceed promptly
+		if _, err := conn.ExecContext(context.WithoutCancel(ctx), `SELECT pg_advisory_unlock($1)`, migrateLockID); err != nil {
+			slog.Error("error releasing migration lock", "error", err)
+		}
+	}()
+
 	version, err := getVersion(ctx, db)
 	if err != nil {
 		slog.Error("unable to get current db migration state", "error", err)

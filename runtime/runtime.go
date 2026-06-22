@@ -26,13 +26,18 @@ func NewRuntime(cfg *Config) (*Runtime, error) {
 	db.SetMaxOpenConns(4)
 	rt.DB = db
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-
-	if err := rt.DB.PingContext(ctx); err != nil {
+	// short timeout just to confirm connectivity
+	pingCtx, cancelPing := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancelPing()
+	if err := rt.DB.PingContext(pingCtx); err != nil {
 		return nil, fmt.Errorf("error pinging db: %w", err)
 	}
-	if err := migrations.Migrate(ctx, db); err != nil {
+
+	// migrations get their own, more generous budget since they may wait on an
+	// advisory lock held by another instance that is mid-migration during a deploy
+	migrateCtx, cancelMigrate := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancelMigrate()
+	if err := migrations.Migrate(migrateCtx, db); err != nil {
 		return nil, fmt.Errorf("error running migrations: %w", err)
 	}
 	return rt, nil

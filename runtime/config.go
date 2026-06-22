@@ -4,6 +4,10 @@ import (
 	"github.com/nyaruka/ezconf"
 )
 
+// DefaultPassword is the admin password used when none is configured; it must be
+// overridden in any real deployment.
+const DefaultPassword = "sesame123"
+
 // Config is our top level configuration object
 type Config struct {
 	DB        string `help:"the connection string for our database"`
@@ -11,7 +15,7 @@ type Config struct {
 	SentryDSN string `help:"the sentry configuration to log errors to, if any"`
 	Version   string `help:"the version being run"`
 	Password  string `help:"the password for the admin user"`
-	Address   string `help:"the address clover will listen on"`
+	Address   string `help:"the address clover will listen on, empty means all interfaces"`
 	Port      int    `help:"the port clover will listen on"`
 }
 
@@ -20,10 +24,10 @@ func NewDefaultConfig() *Config {
 	return &Config{
 		DB:       "postgres://clover_test:temba@localhost/clover_test?sslmode=disable",
 		LogLevel: "info",
-		Address:  "localhost",
+		Address:  "",
 		Port:     8060,
 		Version:  "Dev",
-		Password: "sesame123",
+		Password: DefaultPassword,
 	}
 }
 
