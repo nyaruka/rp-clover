@@ -58,9 +58,10 @@ func main() {
 		slog.SetDefault(logger)
 	}
 
-	// warn if the admin interface is left on the default password
-	if cfg.Password == runtime.DefaultPassword {
-		logger.Warn("using default admin password, set CLOVER_PASSWORD to secure the admin interface")
+	// require an admin password so the admin interface is never exposed with a default
+	if cfg.Password == "" {
+		logger.Error("no admin password set, set CLOVER_PASSWORD")
+		os.Exit(1)
 	}
 
 	// our settings shouldn't contain a timezone, nothing will work right with this not being a constant UTC
