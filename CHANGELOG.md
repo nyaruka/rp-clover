@@ -1,3 +1,8 @@
+v0.5.0 (2026-06-22)
+-------------------------
+ * Require an admin password instead of shipping a default
+ * Improve container-readiness
+
 v0.4.2 (2026-05-18)
 -------------------------
  * Remove the transitional legacy 8081 listener
