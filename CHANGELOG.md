@@ -1,3 +1,8 @@
+v0.5.1 (2026-06-23)
+-------------------------
+ * Merge pull request #15 from nyaruka/update-deps
+ * Update deps
+
 v0.5.0 (2026-06-22)
 -------------------------
  * Require an admin password instead of shipping a default
