@@ -15,3 +15,11 @@ fabfile.py
 deploy
 *.pyc
 rp-clover
+
+.devcontainer
+
+# AI
+.claude/
+CLAUDE.md
+CODEX.md
+AGENTS.md
