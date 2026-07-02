@@ -1,25 +1,19 @@
-# Binaries for programs and plugins
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-
-# Test binary, build with `go test -c`
-*.test
-
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
-
-fabfile.py
-deploy
-*.pyc
-rp-clover
-
+# General
+*~
+.DS_Store
+.vscode/
 .devcontainer
+deploy
+fabfile.py
 
 # AI
 .claude/
 CLAUDE.md
 CODEX.md
 AGENTS.md
+
+# Go
+coverage.text
+
+# Project specific
+/rp-clover
