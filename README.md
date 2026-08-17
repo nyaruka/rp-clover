@@ -1,7 +1,6 @@
 # 🍀 Clover 
 
 [![Build Status](https://github.com/nyaruka/rp-clover/workflows/CI/badge.svg)](https://github.com/nyaruka/rp-clover/actions?query=workflow%3ACI)
-[![codecov](https://codecov.io/gh/nyaruka/rp-clover/branch/main/graph/badge.svg)](https://codecov.io/gh/nyaruka/rp-clover)
 
 Router for incoming messages to RapidPro/TextIt, takes care of changing contact affinity based on keywords and routing 
 incoming messages based on that affinity.
